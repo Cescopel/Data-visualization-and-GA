@@ -1,0 +1,323 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Mar 12 11:29:51 2023
+
+@author: frapeloros
+"""
+
+#######Import libraries#########
+
+import matplotlib.pyplot as plt           #plots
+from datetime import datetime             #date manipulation
+from scipy.optimize import curve_fit      #fit
+import math                               #mathematical expressions
+import numpy as np                        #only for math functions
+import csv                                #to manipulate .csv  file 
+import pandas as pd 
+import os 
+import matplotlib.pyplot as plt
+import seaborn as sns
+from wordcloud import WordCloud, STOPWORDS
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import random
+
+#######Data loading#########
+
+df_pizza = pd.read_csv('pizza_v2.csv') #call pizza data frame
+
+
+#######cleaning and processing Data#########
+
+df_pizza['price_cad'] = df_pizza['price_cad'].str.replace('$', '').astype(float)
+df_pizza['diameter'] = df_pizza['diameter'].str.replace('inch', '').astype(float)
+df_pizza.loc[:,df_pizza.dtypes == 'object'] = df_pizza.select_dtypes(include=['object']).apply(lambda x: x.astype('category'))
+df_pizza.info()
+
+#######visualizing Data#########
+
+feature_cate = df_pizza.select_dtypes(include=['category']).columns
+
+for i, cate in enumerate(feature_cate):
+    print('\n\nBar Chart No. {} Plot {} Count'.format(i+1, cate))
+    ax = df_pizza[cate].value_counts(sort=False).plot(kind='bar')
+    ax.set_title(cate +' count')
+    ax.set_xlabel(cate)
+    ax.set_ylabel('count')
+    plt.show()
+    print('{}.{} count in persentage(%)'.format(i+1, cate),df_pizza[cate].value_counts(sort=False, normalize=True).round(2)*100, sep='\n')
+
+
+ax = sns.catplot(kind='count', data=df_pizza, x="company", hue='topping', aspect=3)
+ax.set_ylabels('Count')
+ax.set_xlabels("Company")
+plt.show()
+print(df_pizza.groupby(['company','topping'])['topping'].agg(['count']))
+
+text = ' '.join(df_pizza['topping'])
+
+plt.rcParams['figure.figsize'] = (6,6)
+wordcloud = WordCloud(background_color = 'purple',colormap='vlag', width = 800,  height = 800, max_words = 30).generate(text)
+plt.imshow(wordcloud)
+plt.axis('off')
+plt.show()
+
+ax = sns.catplot(kind='count', data=df_pizza, x="company", hue='size', aspect=2)
+ax.set_ylabels('Count')
+ax.set_xlabels("Company")
+plt.show()
+print(df_pizza.groupby(['company','size'])['size'].agg(['count']))
+
+sns.scatterplot(data=df_pizza, x='diameter', y='price_cad', hue='size')
+plt.show()
+
+corr = df_pizza[['diameter', 'price_cad']].corr().iloc[0,1]
+print('x=== ', corr)
+
+
+# Create a subset of the dataframe with only the relevant columns
+subset = df_pizza[['diameter', 'price_cad']]
+
+# Calculate the correlation matrix
+corr = subset.corr()
+
+# Create a heatmap of the correlation matrix
+sns.heatmap(corr, annot=True, cmap='coolwarm')
+
+#######cleaning and processing Data#########
+
+feature_numer = df_pizza['diameter']
+feature_cate = df_pizza.drop(columns=['price_cad', 'diameter'], axis=1)
+feature_cate_dummies = pd.get_dummies(feature_cate)
+
+
+
+X = pd.concat([feature_numer,feature_cate_dummies],axis=1).values
+y = df_pizza['price_cad'].values
+
+
+#######Developing GA#########
+
+NUM_GENERATIONS = 10
+MUTATION_PROBABILITY = 0.00
+
+FEATURES=['topping_beef', 'topping_black_papper', 'topping_chicken',
+'topping_meat', 'topping_mozzarella', 'topping_mushrooms',
+'topping_onion', 'topping_papperoni', 'topping_sausage',
+'topping_smoked_beef', 'topping_tuna', 'topping_vegetables',
+'variant_BBQ_meat_fiesta', 'variant_BBQ_sausage',
+'variant_american_classic', 'variant_american_favorite',
+'variant_classic', 'variant_crunchy', 'variant_double_decker',
+'variant_double_mix', 'variant_double_signature',
+'variant_extravaganza', 'variant_gournet_greek',
+'variant_italian_veggie', 'variant_meat_eater', 'variant_meat_lovers',
+'variant_neptune_tuna', 'variant_new_york', 'variant_spicy tuna',
+'variant_spicy_tuna', 'variant_super_supreme', 'variant_thai_veggie',
+'size_XL', 'size_jumbo', 'size_large', 'size_medium', 'size_reguler',
+'size_small', 'extra_sauce_no', 'extra_sauce_yes', 'extra_cheese_no',
+'extra_cheese_yes', 'extra_mushrooms_no', 'extra_mushrooms_yes']
+companies_vector= ['company_A', 'company_B','company_C','company_D','company_E']
+
+#Taking Company A
+sub_matrix_A= feature_cate_dummies[feature_cate_dummies['company_A'] == 1]
+
+
+FEATURE_PRICES_companyA = {
+    'topping_beef': random.randint(1, 5),
+    'topping_black_papper': random.randint(1, 5),
+    'topping_chicken': random.randint(1, 5),
+    'topping_meat': random.randint(1, 5),
+    'topping_mozzarella': random.randint(1, 5),
+    'topping_mushrooms': random.randint(1, 5),
+    'topping_onion': random.randint(1, 5),
+    'topping_papperoni': random.randint(1, 5),
+    'topping_sausage': random.randint(1, 5),
+    'topping_smoked_beef': random.randint(60, 100),
+    'topping_tuna': 0,
+    'topping_vegetables': random.randint(1, 5),
+    'variant_BBQ_meat_fiesta': random.randint(1, 5),
+    'variant_BBQ_sausage': random.randint(1, 5),
+    'variant_american_classic': random.randint(1, 5),
+    'variant_american_favorite': random.randint(1, 5),
+    'variant_classic': random.randint(1, 5),
+    'variant_crunchy': random.randint(1, 5),
+    'variant_double_decker': random.randint(1, 5),
+    'variant_double_mix': random.randint(1, 5),
+    'variant_double_signature': random.randint(1, 5),
+    'variant_extravaganza': random.randint(1, 5),
+    'variant_gournet_greek': random.randint(1, 5),
+    'variant_italian_veggie': random.randint(1, 5),
+    'variant_meat_eater': random.randint(1, 5),
+    'variant_meat_lovers': random.randint(1, 5),
+    'variant_neptune_tuna': random.randint(1, 5),
+    'variant_new_york': random.randint(1, 5),
+    'variant_spicy tuna': random.randint(1, 5),
+    'variant_spicy_tuna': random.randint(1, 5),
+    'variant_super_supreme': random.randint(1, 5),
+    'variant_thai_veggie': random.randint(1, 5),
+    'size_XL': random.randint(5, 5),
+    'size_jumbo': random.randint(1, 2),
+    'size_large': random.randint(4, 4),
+    'size_medium': random.randint(3, 4),
+    'size_reguler': random.randint(4, 5),
+    'size_small': random.randint(3, 3),
+    'extra_sauce_no': 0,
+    'extra_sauce_yes': random.randint(1, 5),
+    'extra_cheese_no': 0,
+    'extra_cheese_yes': random.randint(1, 5),
+    'extra_mushrooms_no': 0,
+    'extra_mushrooms_yes': random.randint(1, 5)
+}
+
+# Define the population size, number of generations, and mutation probability
+
+sub_matrix_A_val=sub_matrix_A.drop(columns=['company_A'], axis=1)
+population_A= sub_matrix_A_val.values
+
+
+def calculate_fitness(population_A):
+    # Calculate the fitness of each candidate solution by summing up the prices of the selected features
+    fitness = []
+    price= []
+    for solution in population_A:
+        current_price = sum([FEATURE_PRICES_companyA[key] for key, selected in zip(FEATURES, solution) if selected])
+        print('current--->',current_price)
+
+        current_fitness = 1 / (current_price + 1)  # Add 1 to avoid division by zero
+        if current_fitness > 0.8:
+            penalty = 1000
+            current_fitness = 1 / penalty
+        fitness.append(current_fitness)
+        price.append(current_price)
+
+    return fitness, price
+
+
+
+    
+
+    
+def selection(population_A, fitness):
+    # Select the fittest candidate solutions using roulette wheel selection
+    selected_indices = np.random.choice(range(len(population_A)), size=len(population_A), replace=True, p= fitness/ np.sum(fitness))
+
+    return population_A[selected_indices]
+
+def crossover(parents):
+    # Perform crossover between pairs of parents to generate new offspring
+    offspring = []
+    for i in range(len(parents) // 2):
+        parent1, parent2 = parents[i*2], parents[i*2+1]
+        crossover_point = np.random.randint(1, len(FEATURES))
+        child1 = np.concatenate([parent1[:crossover_point], parent2[crossover_point:]])
+        child2 = np.concatenate([parent2[:crossover_point], parent1[crossover_point:]])
+        offspring.append(child1)
+        offspring.append(child2)
+    return np.array(offspring)
+
+def mutation(population_A):
+    # Mutate each feature of each candidate solution with a certain probability
+    for i in range(len(population_A)):
+        for j in range(len(FEATURES)):
+            if np.random.rand() < MUTATION_PROBABILITY:
+                population_A[i][j] = 1 - population_A[i][j]  # Flip the bit
+    return population_A
+fitness_history = []  # Create an empty list to store fitness at each iteration
+NUM_GENERATIONS_history= []
+price_history = []
+
+# Run the genetic algorithm for the specified number of generations
+for i in range(NUM_GENERATIONS):
+    # Evaluate the fitness of the candidate solutions
+    fitness,price = calculate_fitness(population_A)
+    fitness_history.append(fitness)
+    price_history.append(price)
+    NUM_GENERATIONS_history.append(i)
+    
+    # Select the fittest candidate solutions
+    parents = selection(population_A, fitness)
+
+    # Generate new offspring through crossover
+    offspring = crossover(parents)
+
+    # Mutate the offspring
+    mutated_offspring = mutation(offspring)
+
+    # Combine the parents and mutated offspring to form the next generation
+    population_A = np.concatenate([parents, mutated_offspring])
+
+# Select the fittest candidate solution from the final population
+final_fitness,final_price = calculate_fitness(population_A)
+
+best_solution_index = np.argmax(final_fitness)
+best_solution = population_A[best_solution_index]
+
+# Plot the distribution of fitness at each iteration
+
+# Plot the fitness distribution at each iteration
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+  
+ax1.plot(NUM_GENERATIONS_history, [max(x) for x in fitness_history])
+
+ax1.set_title("Evolution of Best Fitness over Iterations")
+ax1.set_xlabel("Iteration")
+ax1.set_ylabel("Best Fitness")
+
+ 
+
+ax2.plot(NUM_GENERATIONS_history, [max(x) for x in price_history])
+ax2.set_title("Price History")
+ax2.set_xlabel("Iteration")
+ax2.set_ylabel("Price")
+
+plt.show()
+
+
+
+
+
+
+# Print the combination of pizza features that results in the lowest price
+# Print the combination of pizza features that results in the lowest price
+print("Best solution:")
+for key, selected in zip(FEATURES, best_solution):
+    if selected:
+        print(f"{key}: yes")
+    else:
+        print(f"{key}: no")
+
+
+# Create a bar chart of the selected features
+best_solution_dict = dict(zip(FEATURES, best_solution))
+selected_features = [key for key, value in best_solution_dict.items() if value == 1]
+selected_values = [best_solution_dict[key] for key in selected_features]
+
+plt.bar(range(len(selected_features)), selected_values, align='center')
+plt.xticks(range(len(selected_features)), selected_features)
+plt.title('Best Solution')
+plt.xlabel('Features')
+plt.ylabel('Selected')
+plt.show()
+
+
+
+
+
+#Taking Company B
+sub_matrix_B= feature_cate_dummies[feature_cate_dummies['company_B'] == 1]
+
+#Taking Company C
+sub_matrix_C= feature_cate_dummies[feature_cate_dummies['company_C'] == 1]
+
+#Taking Company D
+sub_matrix_D= feature_cate_dummies[feature_cate_dummies['company_D'] == 1]
+
+#Taking Company E
+sub_matrix_E= feature_cate_dummies[feature_cate_dummies['company_E'] == 1]
+
+print(feature_cate_dummies.columns)
+
+
+
+
